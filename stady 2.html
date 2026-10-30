@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>期末勉強タイマー</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: Arial, "Noto Sans JP", sans-serif;
+    background: #f3f3f3;
+    color: #222;
+}
+
+.container {
+    width: min(900px, 94vw);
+    margin: auto;
+    padding: 20px 0;
+}
+
+/* ===== タブ ===== */
+
+.tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+}
+
+.tab {
+    flex: 1;
+    padding: 16px;
+    border: none;
+    border-radius: 14px 14px 0 0;
+    background: #ddd;
+    color: #333;
+    font-size: 21px;
+    cursor: pointer;
+}
+
+.tab.active {
+    background: #222;
+    color: white;
+}
+
+.tab:disabled {
+    background: #aaa;
+    color: #666;
+    cursor: not-allowed;
+}
+
+/* ===== タブ内容 ===== */
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* ===== タイマー ===== */
+
+.timer-card {
+    background: white;
+    border-radius: 25px;
+    padding: 30px 20px 40px;
+    text-align: center;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+h1 {
+    font-size: 32px;
+    margin: 0 0 15px;
+}
+
+.status {
+    font-size: 32px;
+    font-weight: bold;
+    margin: 15px 0;
+}
+
+.timer {
+    font-size: clamp(120px, 28vw, 240px);
+    line-height: 1;
+    font-weight: bold;
+    font-variant-numeric: tabular-nums;
+    margin: 25px 0;
+}
+
+.set {
+    font-size: 25px;
+    margin-bottom: 30px;
+}
+
+.buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+button.action {
+    border: none;
+    border-radius: 15px;
+    padding: 16px 32px;
+    font-size: 22px;
+    cursor: pointer;
+    background: #222;
+    color: white;
+}
+
+button.action:disabled {
+    background: #aaa;
+    cursor: not-allowed;
+}
+
+.pause-info {
+    margin-top: 18px;
+    font-size: 18px;
+    color: #555;
+}
+
+/* ===== 設定 ===== */
+
+.settings-card {
+    background: white;
+    border-radius: 25px;
+    padding: 30px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.settings-card h2 {
+    font-size: 28px;
+    margin-top: 0;
+}
+
+.setting {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 5px;
+    border-bottom: 1px solid #ddd;
+    font-size: 20px;
+}
+
+input[type="number"],
+select {
+    font-size: 19px;
+    padding: 9px 12px;
+    border: 1px solid #aaa;
+    border-radius: 9px;
+    background: white;
+}
+
+input[type="number"] {
+    width: 100px;
+}
+
+select {
+    width: 190px;
+}
+
+.checkbox {
+    width: 25px;
+    height: 25px;
+}
+
+.long-settings {
+    display: none;
+}
+
+.long-settings.show {
+    display: block;
+}
+
+.apply {
+    width: 100%;
+    margin-top: 25px;
+    border: none;
+    border-radius: 15px;
+    padding: 17px;
+    background: #222;
+    color: white;
+    font-size: 21px;
+    cursor: pointer;
+}
+
+/* ===== 一時停止 ===== */
+
+.paused {
+    font-size: 25px;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+@media (max-width: 600px) {
+
+    h1 {
+        font-size: 25px;
+    }
+
+    .status {
+        font-size: 26px;
+    }
+
+    .timer {
+        font-size: 105px;
+    }
+
+    .setting {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    input[type="number"],
+    select {
+        width: 100%;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- ===== タブ ===== -->
+
+    <div class="tabs">
+
+        <button
+            id="timerTab"
+            class="tab active"
+            onclick="showTab('timer')">
+            ⏱ タイマー
+        </button>
+
+        <button
+            id="settingsTab"
+            class="tab"
+            onclick="showTab('settings')">
+            ⚙ 設定
+        </button>
+
+    </div>
+
+
+    <!-- ===== タイマー ===== -->
+
+    <div id="timerContent" class="tab-content active">
+
+        <div class="timer-card">
+
+            <h1>📚 期末勉強タイマー</h1>
+
+            <div id="status" class="status">
+                📚 勉強
+            </div>
+
+            <div id="timer" class="timer">
+                25:00
+            </div>
+
+            <div id="set" class="set">
+                1 / 4 セット
+            </div>
+
+            <div class="buttons">
+
+                <button
+                    id="startButton"
+                    class="action"
+                    onclick="startTimer()">
+                    ▶ 開始
+                </button>
+
+                <button
+                    id="pauseButton"
+                    class="action"
+                    onclick="pauseTimer()"
+                    disabled>
+                    ⏸ 一時停止
+                </button>
+
+                <button
+                    id="resumeButton"
+                    class="action"
+                    onclick="resumeTimer()"
+                    style="display:none;">
+                    ▶ 再開
+                </button>
+
+            </div>
+
+            <div id="pauseInfo" class="pause-info">
+                休憩中のみ一時停止できます（最大5分）
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ===== 設定 ===== -->
+
+    <div id="settingsContent" class="tab-content">
+
+        <div class="settings-card">
+
+            <h2>⚙ タイマー設定</h2>
+
+            <div class="setting">
+
+                <span>📚 勉強時間</span>
+
+                <div>
+                    <input
+                        id="studyMin"
+                        type="number"
+                        min="1"
+                        value="25">
+                    分
+                </div>
+
+            </div>
+
+
+            <div class="setting">
+
+                <span>☕ 通常休憩</span>
+
+                <select id="breakMin">
+
+                    <option value="1">1分</option>
+                    <option value="2">2分</option>
+                    <option value="3">3分</option>
+                    <option value="4">4分</option>
+                    <option value="5" selected>5分</option>
+
+                </select>
+
+            </div>
+
+
+            <div class="setting">
+
+                <span>🔢 セット数</span>
+
+                <div>
+                    <input
+                        id="setCount"
+                        type="number"
+                        min="1"
+                        value="4">
+                    セット
+                </div>
+
+            </div>
+
+
+            <div class="setting">
+
+                <span>🌴 長い休憩</span>
+
+                <input
+                    id="longBreakEnabled"
+                    class="checkbox"
+                    type="checkbox"
+                    onchange="toggleLongSettings()">
+
+            </div>
+
+
+            <div id="longSettings" class="long-settings">
+
+                <div class="setting">
+
+                    <span>🌴 長い休憩時間</span>
+
+                    <select id="longBreakMin">
+
+                        <option value="10">10分</option>
+                        <option value="11">11分</option>
+                        <option value="12">12分</option>
+                        <option value="13">13分</option>
+                        <option value="14">14分</option>
+                        <option value="15" selected>15分</option>
+                        <option value="16">16分</option>
+                        <option value="17">17分</option>
+                        <option value="18">18分</option>
+                        <option value="19">19分</option>
+                        <option value="20">20分</option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="setting">
+
+                    <span>🔁 長い休憩を入れる間隔</span>
+
+                    <select id="longBreakEvery">
+
+                        <option value="1">1セットごと</option>
+                        <option value="2">2セットごと</option>
+                        <option value="3">3セットごと</option>
+                        <option value="4">4セットごと</option>
+                        <option value="5" selected>5セットごと</option>
+                        <option value="6">6セットごと</option>
+                        <option value="7">7セットごと</option>
+                        <option value="8">8セットごと</option>
+                        <option value="9">9セットごと</option>
+                        <option value="10">10セットごと</option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+
+            <button
+                class="apply"
+                onclick="applySettings()">
+                設定を適用
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+/* =========================
+   設定
+========================= */
+
+let studySeconds = 25 * 60;
+let breakSeconds = 5 * 60;
+let longBreakSeconds = 15 * 60;
+
+let totalSets = 4;
+
+let longBreakEnabled = false;
+let longBreakEvery = 5;
+
+
+/* =========================
+   状態
+========================= */
+
+let remaining = studySeconds;
+
+let currentSet = 1;
+
+let isStudy = true;
+let isLongBreak = false;
+
+let running = false;
+let paused = false;
+
+let timerId = null;
+let pauseTimeout = null;
+
+
+/* =========================
+   タブ
+========================= */
+
+function showTab(tab) {
+
+    /*
+       タイマー開始後は設定へ移動禁止
+    */
+
+    if (tab === "settings" && running) {
+        return;
+    }
+
+    if (tab === "settings" && paused) {
+        return;
+    }
+
+
+    const timerContent =
+        document.getElementById("timerContent");
+
+    const settingsContent =
+        document.getElementById("settingsContent");
+
+    const timerTab =
+        document.getElementById("timerTab");
+
+    const settingsTab =
+        document.getElementById("settingsTab");
+
+
+    if (tab === "timer") {
+
+        timerContent.classList.add("active");
+        settingsContent.classList.remove("active");
+
+        timerTab.classList.add("active");
+        settingsTab.classList.remove("active");
+
+    } else {
+
+        timerContent.classList.remove("active");
+        settingsContent.classList.add("active");
+
+        timerTab.classList.remove("active");
+        settingsTab.classList.add("active");
+    }
+}
+
+
+/* =========================
+   表示
+========================= */
+
+function updateDisplay() {
+
+    const minutes =
+        Math.floor(remaining / 60);
+
+    const seconds =
+        remaining % 60;
+
+
+    document.getElementById("timer").textContent =
+        String(minutes).padStart(2, "0") +
+        ":" +
+        String(seconds).padStart(2, "0");
+
+
+    const status =
+        document.getElementById("status");
+
+
+    if (isStudy) {
+
+        status.textContent = "📚 勉強";
+
+    } else if (isLongBreak) {
+
+        status.textContent = "🌴 長い休憩";
+
+    } else {
+
+        status.textContent = "☕ 休憩";
+    }
+
+
+    if (paused) {
+        status.textContent = "⏸ 休憩一時停止";
+    }
+
+
+    document.getElementById("set").textContent =
+        currentSet +
+        " / " +
+        totalSets +
+        " セット";
+
+
+    document.title =
+        document.getElementById("timer").textContent +
+        " - " +
+        status.textContent;
+
+
+    updateButtons();
+}
+
+
+/* =========================
+   ボタン状態
+========================= */
+
+function updateButtons() {
+
+    const startButton =
+        document.getElementById("startButton");
+
+    const pauseButton =
+        document.getElementById("pauseButton");
+
+    const resumeButton =
+        document.getElementById("resumeButton");
+
+    const settingsTab =
+        document.getElementById("settingsTab");
+
+
+    startButton.disabled =
+        running || paused;
+
+
+    pauseButton.disabled =
+        !running ||
+        isStudy ||
+        paused;
+
+
+    resumeButton.style.display =
+        paused ? "inline-block" : "none";
+
+
+    pauseButton.style.display =
+        paused ? "none" : "inline-block";
+
+
+    /*
+       タイマー開始後は設定タブをロック
+    */
+
+    settingsTab.disabled =
+        running || paused;
+}
+
+
+/* =========================
+   開始
+========================= */
+
+function startTimer() {
+
+    if (running || paused) {
+        return;
+    }
+
+
+    running = true;
+
+
+    /*
+       開始した瞬間に
+       タイマー画面へ固定
+    */
+
+    showTab("timer");
+
+
+    updateDisplay();
+
+
+    timerId = setInterval(() => {
+
+        remaining--;
+
+        updateDisplay();
+
+
+        if (remaining <= 0) {
+
+            changePhase();
+
+        }
+
+    }, 1000);
+}
+
+
+/* =========================
+   一時停止
+   ※休憩のみ
+========================= */
+
+function pauseTimer() {
+
+    if (!running) {
+        return;
+    }
+
+
+    if (isStudy) {
+        return;
+    }
+
+
+    clearInterval(timerId);
+
+    timerId = null;
+
+    running = false;
+
+    paused = true;
+
+
+    updateDisplay();
+
+
+    /*
+       5分後に自動再開
+    */
+
+    pauseTimeout = setTimeout(() => {
+
+        if (paused) {
+            resumeTimer();
+        }
+
+    }, 5 * 60 * 1000);
+}
+
+
+/* =========================
+   再開
+========================= */
+
+function resumeTimer() {
+
+    if (!paused) {
+        return;
+    }
+
+
+    clearTimeout(pauseTimeout);
+
+    pauseTimeout = null;
+
+    paused = false;
+
+
+    updateDisplay();
+
+    startTimer();
+}
+
+
+/* =========================
+   フェーズ変更
+========================= */
+
+function changePhase() {
+
+    clearInterval(timerId);
+
+    timerId = null;
+
+    running = false;
+
+    beep();
+
+
+    if (isStudy) {
+
+        /*
+           最後のセット
+        */
+
+        if (currentSet >= totalSets) {
+
+            finishTimer();
+
+            return;
+        }
+
+
+        /*
+           長い休憩
+        */
+
+        if (
+            longBreakEnabled &&
+            currentSet % longBreakEvery === 0
+        ) {
+
+            isStudy = false;
+            isLongBreak = true;
+
+            remaining = longBreakSeconds;
+
+        } else {
+
+            /*
+               通常休憩
+            */
+
+            isStudy = false;
+            isLongBreak = false;
+
+            remaining = breakSeconds;
+        }
+
+    } else {
+
+        /*
+           休憩終了
+        */
+
+        currentSet++;
+
+        isStudy = true;
+        isLongBreak = false;
+
+        remaining = studySeconds;
+    }
+
+
+    updateDisplay();
+
+    startTimer();
+}
+
+
+/* =========================
+   完了
+========================= */
+
+function finishTimer() {
+
+    clearInterval(timerId);
+    clearTimeout(pauseTimeout);
+
+    timerId = null;
+    pauseTimeout = null;
+
+    running = false;
+    paused = false;
+
+    remaining = 0;
+
+
+    document.getElementById("timer").textContent =
+        "00:00";
+
+    document.getElementById("status").textContent =
+        "🎉 勉強終了！";
+
+    document.getElementById("set").textContent =
+        totalSets + "セット完了！";
+
+
+    document.title =
+        "🎉 勉強終了！";
+
+
+    /*
+       終了後は設定タブを再び使用可能にする
+    */
+
+    document.getElementById("settingsTab").disabled =
+        false;
+
+
+    updateButtons();
+}
+
+
+/* =========================
+   設定適用
+========================= */
+
+function applySettings() {
+
+    /*
+       タイマー中は変更不可
+    */
+
+    if (running || paused) {
+
+        alert(
+            "タイマー実行中は設定を変更できません。"
+        );
+
+        return;
+    }
+
+
+    const studyMin =
+        Number(
+            document.getElementById("studyMin").value
+        );
+
+    const breakMin =
+        Number(
+            document.getElementById("breakMin").value
+        );
+
+    const setCount =
+        Number(
+            document.getElementById("setCount").value
+        );
+
+    const longBreakMin =
+        Number(
+            document.getElementById("longBreakMin").value
+        );
+
+    const every =
+        Number(
+            document.getElementById("longBreakEvery").value
+        );
+
+
+    if (studyMin < 1) {
+
+        alert(
+            "勉強時間は1分以上にしてください。"
+        );
+
+        return;
+    }
+
+
+    if (breakMin < 1 || breakMin > 5) {
+
+        alert(
+            "通常休憩は1～5分です。"
+        );
+
+        return;
+    }
+
+
+    if (setCount < 1) {
+
+        alert(
+            "セット数は1以上にしてください。"
+        );
+
+        return;
+    }
+
+
+    studySeconds =
+        studyMin * 60;
+
+    breakSeconds =
+        breakMin * 60;
+
+    longBreakSeconds =
+        longBreakMin * 60;
+
+    totalSets =
+        setCount;
+
+    longBreakEnabled =
+        document.getElementById(
+            "longBreakEnabled"
+        ).checked;
+
+    longBreakEvery =
+        every;
+
+
+    currentSet = 1;
+
+    isStudy = true;
+
+    isLongBreak = false;
+
+    remaining = studySeconds;
+
+
+    updateDisplay();
+
+    showTab("timer");
+}
+
+
+/* =========================
+   長い休憩設定
+========================= */
+
+function toggleLongSettings() {
+
+    const enabled =
+        document.getElementById(
+            "longBreakEnabled"
+        ).checked;
+
+
+    document.getElementById(
+        "longSettings"
+    ).classList.toggle(
+        "show",
+        enabled
+    );
+}
+
+
+/* =========================
+   通知音
+========================= */
+
+function beep() {
+
+    try {
+
+        const AudioContext =
+            window.AudioContext ||
+            window.webkitAudioContext;
+
+        const ctx =
+            new AudioContext();
+
+        const oscillator =
+            ctx.createOscillator();
+
+        const gain =
+            ctx.createGain();
+
+
+        oscillator.connect(gain);
+        gain.connect(ctx.destination);
+
+
+        oscillator.frequency.value = 880;
+
+        oscillator.type = "sine";
+
+
+        gain.gain.setValueAtTime(
+            0.2,
+            ctx.currentTime
+        );
+
+
+        gain.gain.exponentialRampToValueAtTime(
+            0.001,
+            ctx.currentTime + 1
+        );
+
+
+        oscillator.start();
+
+        oscillator.stop(
+            ctx.currentTime + 1
+        );
+
+    } catch (e) {
+
+        console.log(
+            "通知音を再生できませんでした"
+        );
+    }
+}
+
+
+/* =========================
+   初期表示
+========================= */
+
+updateDisplay();
+
+</script>
+
+</body>
+</html>
